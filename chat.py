@@ -120,7 +120,7 @@ function_descriptions = [
 ]
 
 def give_doctors():
-    return {"task": "give_doctors", "data": doctors}
+    return {"task": "give_doctors", "status": True, "data": doctors}
 
 # def find_docs(location, specialization, date, time):
 #     desired_datetime = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
@@ -154,9 +154,9 @@ def book_appointment(doctor, date, time, location, user):
                             location=location)
     if return_data["status"] == True:
         print(f"booked with {doctor}, {date}, {time}, {location}")
-        return {"task": "book_appointment", "status": True, "doctor": doctor, "date": date, "time": time, "location": location, "numerical": return_data["data"]}
+        return {"task": "book_appointment", "status": True, "data": {"doctor": doctor, "date": date, "time": time, "location": location, "numerical": return_data["data"]}}
     else:
-        return {"task": "book_appointment", "status": False, "message": "Error occured"}
+        return {"task": "book_appointment", "status": False, "data": "Error occured"}
 
 def add_medication(days, time, dosage, medication_name, until, user):
     return_data = main.add_medication(user=user,
@@ -167,22 +167,22 @@ def add_medication(days, time, dosage, medication_name, until, user):
                         untill=until)
     if return_data["status"] == True:
         print(f"added medication {medication_name} of dosage {dosage}, at {time} on {days}, for a {until} for {user}")
-        return {"task": "add_medication", "status": True, "days": days, "time": time, "dosage": dosage,
-                "medication_name": medication_name, "until": until}
+        return {"task": "add_medication", "status": True, "data": {"days": days, "time": time, "dosage": dosage,
+                "medication_name": medication_name, "until": until}}
     else:
-        return {"task": "add_medication", "status": False, "msg": "Error occured"}
+        return {"task": "add_medication", "status": False, "data": "Error occured"}
 
 def emergency():
     print("Emergency is called")
-    return {"task": "emergency", "data": "called emergency services"}
+    return {"task": "emergency", "status": True, "data": "called emergency services"}
 
 def fetch_pricing(name):
     sear_tata = searchTata(name=name)
     search_pe = searchPE(name=name)
-    return {"task": "fetch_pricing", "message":"below are the prices", "options": [sear_tata, search_pe]}
+    return {"task": "fetch_pricing", "status": True, "data": {"search_tata": sear_tata, "search_pe": search_pe}}
 
 def get_appointments(user):
-    return {"task": "get_appointments", "data": mongo_call.view_appointments(user=user)}
+    return {"task": "get_appointments", "status": True, "data": mongo_call.view_appointments(user=user)}
 
 messages = [{"role": "system", "content": f"You are a medical assistant. \
              To help people you have the doctors informations: \
@@ -214,7 +214,7 @@ def chat(query, user):
     elif response.choices[0].finish_reason.lower() == "function_call":
 
         if response.choices[0].message.function_call.name.lower() == "book_appointment":
-            messages.append({"role": "assistant", "content": str(response.choices[0].message.function_call)})
+            #messages.append({"role": "assistant", "content": str(response.choices[0].message.function_call)})
             function_args = json.loads(response.choices[0].message.function_call.arguments)
             return_data = book_appointment(doctor=function_args["doctor"],
                              date=function_args["date"],
@@ -226,7 +226,7 @@ def chat(query, user):
             return_data = give_doctors()
 
         elif response.choices[0].message.function_call.name.lower() == "add_medication":
-            messages.append({"role": "assistant", "content": str(response.choices[0].message.function_call)})
+            #messages.append({"role": "assistant", "content": str(response.choices[0].message.function_call)})
             function_args = json.loads(response.choices[0].message.function_call.arguments)
             return_data = add_medication(days=function_args["days"],
                            time=function_args["time"],
@@ -237,13 +237,13 @@ def chat(query, user):
         elif response.choices[0].message.function_call.name.lower() == "emergency":
             return_data = emergency()
         elif response.choices[0].message.function_call.name.lower() == "fetch_pricing":
-            messages.append({"role": "assistant", "content": str(response.choices[0].message.function_call)})
+            print(response.choices[0].message.function_call)
             function_args = json.loads(response.choices[0].message.function_call.arguments)
             return_data = fetch_pricing(function_args['name'])
 
         elif response.choices[0].message.function_call.name.lower() == "get_appointments":
             return_data = get_appointments(user=user)
-
+    messages.append({"role": "assistant", "content": json.dumps(return_data)})
     return return_data
             
 # if __name__ == "__main__":
